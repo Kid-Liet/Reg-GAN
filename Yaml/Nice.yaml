@@ -1,0 +1,23 @@
+#####
+name: Nice
+bidirect: True #Unidirectional or bidirectional
+regist: True
+save_root: '/home/klk/code/NIPS/S_R/output/Nice/B+R/'
+image_save: '/data1/T1T2_out/Nice/B+R/'
+
+
+
+
+epoch: 0        # starting epoch
+n_epochs: 160       # How often do you want to display output images during training
+batchSize: 1               # size of the batches
+dataroot: '/data1/T1T2/train2D/'     # root directory of the dataset
+val_dataroot: '/data1/T1T2/val2D/'
+lr: 0.0001                   # initial learning rate
+decay_epoch: 20            # epoch to start linearly decaying the learning rate to 0
+size: 256                # size of the data crop
+input_nc: 1         
+output_nc: 1                  
+cuda: True                
+n_cpu: 0
+
