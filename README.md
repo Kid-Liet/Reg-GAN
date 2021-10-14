@@ -1,6 +1,6 @@
 # Breaking the Dilemma of Medical Image-to-image Translation
 
-Supervised Pix2Pix and unsupervised Cycle-consistency are two modes that dominate the field of medical image-to-image translation. However, neither modes
+Supervised Pix2Pix and unsupervised Cycle-consistency are two modes that dominate the field of medical image-to-image translation. However, neither modes
 are ideal. The Pix2Pix mode has excellent performance. But it requires paired
 and well pixel-wise aligned images, which may not always be achievable due
 to respiratory motion or anatomy change between times that paired images are
@@ -23,8 +23,4 @@ aligned data are not available
 This paper has been accepted by [NeurIPS 2021](https://openreview.net/forum?id=C0GmZH2RnVR&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DNeurIPS.cc%2F2021%2FConference%2FAuthors%23your-submissions)).
 Get the full paper on [Arxiv](https://arxiv.org/pdf/2110.06465.pdf).
 
-
-
-
-For more details or any questions, please feel easy to contact us by email ^\_^
 
