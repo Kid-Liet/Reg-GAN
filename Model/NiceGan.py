@@ -688,7 +688,7 @@ class Discriminator2(nn.Module):
 
             
             
-            return  out0, out1, cam_logit,z
+            return  out0, out1, cam_logit
         
 
 
