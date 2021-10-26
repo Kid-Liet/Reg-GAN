@@ -40,7 +40,8 @@ python train.py
 ```
 ## Trained Weights
 We provide Pix2pix, CycleGAN, RegGAN trained weights under the condition of Noise.0:
--  ./output/Pix2pix_noise0/
--  ./output/CycleGAN_noise0/
--  ./output/RegGAN_noise0/
+https://drive.google.com/file/d/1xWXB9u6dQ9ZytmgQl_0ph4H_Ivtd41zJ/view?usp=sharing
+-  Pix2pix_noise0
+-  CycleGAN_noise0
+-  RegGAN_noise0
 
