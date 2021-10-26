@@ -1,19 +1,12 @@
 #####
 name: P2p
-bidirect: False #Unidirectional or bidirectional
-regist: True
-save_root: '/home/klk/code/NIPS/S_R/output/P2p_noise5/'
-image_save: '/data1/T1T2_out/Cyc_regist/P2P_5/'
-
-
-
-
-
-
-
-
-
-
+noise_level: 1
+save_root: './output/P2P/noise_1/'
+image_save: './output/P2P/noise_1/img/'
+port: 6019   #  port parameters
+# lamda weight
+Adv_lamda: 1
+P2P_lamda: 100
 
 
 epoch: 0        # starting epoch

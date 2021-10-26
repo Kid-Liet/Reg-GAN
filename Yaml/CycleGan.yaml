@@ -1,19 +1,17 @@
 #####
 name: CycleGan
 bidirect: False #Unidirectional or bidirectional
-regist: True
-save_root: '/home/klk/code/NIPS/S_R/output/Cyc/S+R_5/'
-image_save: '/data1/T1T2_out/Cyc_regist/fake_B_5/'
+regist: True    # With or without registration network
+noise_level: 1  #  noise level
+port: 6019   #  port parameters
+save_root: './output/Cyc/NC+R/'
+image_save: './output/Cyc/NC+R/img/'
 
-
-
-
-
-
-
-
-
-
+# lamda weight
+Adv_lamda: 1
+Cyc_lamda: 10
+Corr_lamda: 20
+Smooth_lamda: 10
 
 
 epoch: 0        # starting epoch

@@ -1,15 +1,20 @@
 #####
-name: Nice
-bidirect: True #Unidirectional or bidirectional
-regist: True
-save_root: '/home/klk/code/NIPS/S_R/output/Nice/B+R/'
-image_save: '/data1/T1T2_out/Nice/B+R/'
+name: NiceGAN
+bidirect: False #Unidirectional or bidirectional
+regist: False
+noise_level: 1  #  noise level
+port: 6019   #  port parameters
+save_root: './output/Nice/NC+R/'
+image_save: './output/Nice/NC+R/img/'
 
-
+Adv_lamda: 1
+Cyc_lamda: 10
+Corr_lamda: 20
+Smooth_lamda: 10
 
 
 epoch: 0        # starting epoch
-n_epochs: 160       # How often do you want to display output images during training
+n_epochs: 80       # How often do you want to display output images during training
 batchSize: 1               # size of the batches
 dataroot: '/data1/T1T2/train2D/'     # root directory of the dataset
 val_dataroot: '/data1/T1T2/val2D/'

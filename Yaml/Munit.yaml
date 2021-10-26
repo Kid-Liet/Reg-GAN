@@ -1,26 +1,24 @@
 #####
 name: Munit
 bidirect: False #Unidirectional or bidirectional
-regist: False
-save_root: './output/Munit/B+R/'
-image_save: './output/Munit/B+R/img/'
+regist: True
+noise_level: 1  #  noise level
+port: 6019   #  port parameters
+save_root: './output/Munit/NC+R/'
+image_save: './output/Munit/NC+R/img/'
 
-
-
-
-
-
-
-
-
-
+# lamda weight
+Adv_lamda: 1
+Cyc_lamda: 10
+Corr_lamda: 20
+Smooth_lamda: 10
 
 
 epoch: 0        # starting epoch
 n_epochs: 80       # How often do you want to display output images during training
 batchSize: 1               # size of the batches
-dataroot: '/raid/lcy/data/brats_nips2021/train2D/'     # root directory of the dataset
-val_dataroot: '/raid/lcy/data/brats_nips2021/val2D/'
+dataroot: '/data1/T1T2/train2D/'     # root directory of the dataset
+val_dataroot: '/data1/T1T2/val2D/'
 lr: 0.0001                   # initial learning rate
 decay_epoch: 20            # epoch to start linearly decaying the learning rate to 0
 size: 256                # size of the data crop
