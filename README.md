@@ -1,26 +1,46 @@
 # Breaking the Dilemma of Medical Image-to-image Translation
-
-Supervised Pix2Pix and unsupervised Cycle-consistency are two modes that dominate the field of medical image-to-image translation. However, neither modes
-are ideal. The Pix2Pix mode has excellent performance. But it requires paired
-and well pixel-wise aligned images, which may not always be achievable due
-to respiratory motion or anatomy change between times that paired images are
-acquired. The Cycle-consistency mode is less stringent with training data and
-works well on unpaired or misaligned images. But its performance may not be
-optimal. In order to break the dilemma of the existing modes, we propose a new
-unsupervised mode called RegGAN for medical image-to-image translation. It
-is based on the theory of "loss-correction". In RegGAN, the misaligned target
-images are considered as noisy labels and the generator is trained with an additional registration network to fit the misaligned noise distribution adaptively. The
-goal is to search for the common optimal solution to both image-to-image translation and registration tasks. We incorporated RegGAN into a few state-of-the-art
-image-to-image translation methods and demonstrated that RegGAN could be
-easily combined with these methods to improve their performances. Such as a
-simple CycleGAN in our mode surpasses latest NICEGAN even though using less
-network parameters. Based on our results, RegGAN outperformed both Pix2Pix on
-aligned data and Cycle-consistency on misaligned or unpaired data. RegGAN is
-insensitive to noises which makes it a better choice for a wide range of scenarios,
-especially for medical image-to-image translation tasks in which well pixel-wise
-aligned data are not available
+![bat](./p2pcycreg.png)
 
 This paper has been accepted by [NeurIPS 2021](https://openreview.net/forum?id=C0GmZH2RnVR&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DNeurIPS.cc%2F2021%2FConference%2FAuthors%23your-submissions)).
 Get the full paper on [Arxiv](https://arxiv.org/pdf/2110.06465.pdf).
 
+## Main Reference Environment
+1. Linux         (Titan RTX)
+2. Python        (3.6.6)
+3. torch         (1.9.0+cu111)
+5. visdom        (0.1.8.9)
+6. numpy         (1.19.2)
+7. skimage       (0.15.0)
+8. Yaml          (5.4.1)
+9. cv2           (3.4.2)
+10. PIL          (8.3.2)
+
+## Usage
+1. Create dataset
+   -  train path/A/
+   -  train path/B/
+   -  val path/A/
+   -  val path/B/ 
+2. The default data file form is .npy and normalized to [-1,1].
+3. Modify the parameters in the .yaml file as needed:
+   -  **bidirect**: whether to use bidirectional network, corresponding to the C or NC mode in the paper.
+   -  **regist**: whether the registration network is used, corresponding to the +R mode in the paper.
+   - **noise_level**: set to 0 if you do not want to use noise.
+   - **port**: port parameters of visdom.
+4. Default RegGAN mode (bidirect:**False**    regist:**True**).
+5. Start visdom：
+ ```
+python -m visdom.server -p 6019
+```
+If other port parameters are used, you need to modify the port in yaml.
+
+6. Train:
+ ```
+python train.py
+```
+## Trained Weights
+We provide Pix2pix, CycleGAN, RegGAN trained weights under the condition of Noise.0:
+-  ./output/Pix2pix_noise0/
+-  ./output/CycleGAN_noise0/
+-  ./output/RegGAN_noise0/
 
