@@ -26,23 +26,9 @@ class P2p_Trainer():
         self.config = config
         ## def networks
         self.netG_A2B = Generator(config['input_nc'], config['output_nc']).cuda()
-        self.netD_B = Discriminator(config['input_nc']+1).cuda()
+        self.netD_B = Discriminator(config['input_nc']*2).cuda()
         self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters(), lr=config['lr'], betas=(0.5, 0.999))
-        
-        if config['regist']:
-            self.R_A = Reg().cuda()
-            self.spatial_transform = Transformer_2D().cuda()
-            
-            self.optimizer_R_A = torch.optim.Adam(self.R_A.parameters(), lr=config['lr'], betas=(0.5, 0.999))
-        if config['bidirect']:
-            self.netG_B2A = Generator(config['input_nc'], config['output_nc']).cuda()
-            self.netD_A = Discriminator(config['input_nc']).cuda()
-            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A2B.parameters(), self.netG_B2A.parameters()),lr=config['lr'], betas=(0.5, 0.999))
-            self.optimizer_D_A = torch.optim.Adam(self.netD_A.parameters(), lr=config['lr'], betas=(0.5, 0.999))
-            
-            
-        else:
-            self.optimizer_G = torch.optim.Adam(self.netG_A2B.parameters(), lr=config['lr'], betas=(0.5, 0.999))
+        self.optimizer_G = torch.optim.Adam(self.netG_A2B.parameters(), lr=config['lr'], betas=(0.5, 0.999))
             
             
                 
@@ -61,13 +47,14 @@ class P2p_Trainer():
         self.fake_B_buffer = ReplayBuffer()
 
         #Dataset loader
+        level = config['noise_level']
         transforms_1 = [ToPILImage(),
-                  RandomAffine(degrees=5,translate=[0.1, 0.1],scale=[0.9, 1.1],fillcolor=-1),#degrees=2,translate=[0.05, 0.05],scale=[0.9, 1.1]
+                  RandomAffine(degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1),
                    ToTensor(),
                    Resize(size_tuple = (config['size'], config['size']))]
     
         transforms_2 = [ToPILImage(),
-                   RandomAffine(degrees=5,translate=[0.1, 0.1],scale=[0.9, 1.1],fillcolor=-1),
+                   RandomAffine(degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1),
                    ToTensor(),
                    Resize(size_tuple = (config['size'], config['size']))]
 
@@ -83,26 +70,23 @@ class P2p_Trainer():
 
  
        # Loss plot
-        self.logger = Logger(config['name'],config['n_epochs'], len(self.dataloader))       
+        self.logger = Logger(config['name'],config['port'],config['n_epochs'], len(self.dataloader))       
         
     def train(self):
         ###### Training ######
         for epoch in range(self.config['epoch'], self.config['n_epochs']):
             for i, batch in enumerate(self.dataloader):
                 # Set model input
-                real_A = Variable(self.input_A.copy_(batch['T1']))
-                real_B = Variable(self.input_B.copy_(batch['T2']))
+                real_A = Variable(self.input_A.copy_(batch['A']))
+                real_B = Variable(self.input_B.copy_(batch['B']))
                
                 self.optimizer_G.zero_grad()
-
-                
                 fake_B = self.netG_A2B(real_A)
-                loss_L1 = self.L1_loss(fake_B, real_B)*100
-                
+                loss_L1 = self.L1_loss(fake_B, real_B) * self.config['P2P_lamda']
                 # gan loss: 
                 fake_AB = torch.cat((real_A, fake_B), 1)
                 pred_fake = self.netD_B(fake_AB)
-                loss_GAN_A2B = self.MSE_loss(pred_fake, self.target_real)
+                loss_GAN_A2B = self.MSE_loss(pred_fake, self.target_real) * self.config['Adv_lamda']
 
                 # Total loss
                 toal_loss = loss_L1 + loss_GAN_A2B
@@ -113,13 +97,8 @@ class P2p_Trainer():
                 self.optimizer_D_B.zero_grad()
                 with torch.no_grad():
                     fake_B = self.netG_A2B(real_A)
-                    #Trans = self.R_A(fake_B,real_B)
-                    #SysRegist_A2B = self.spatial_transform(fake_B,Trans)
-
-
-
-                pred_fake0 = self.netD_B(torch.cat((real_A, fake_B), 1))
-                pred_real = self.netD_B(torch.cat((real_A, real_B), 1))
+                pred_fake0 = self.netD_B(torch.cat((real_A, fake_B), 1)) * self.config['Adv_lamda']
+                pred_real = self.netD_B(torch.cat((real_A, real_B), 1)) * self.config['Adv_lamda']
                 loss_D_B = self.MSE_loss(pred_fake0, self.target_fake)+self.MSE_loss(pred_real, self.target_real)
 
 
@@ -136,6 +115,8 @@ class P2p_Trainer():
                 
                 
     #         # Save models checkpoints
+            if not os.path.exists(self.config["save_root"]):
+                os.makedirs(self.config["save_root"])
             torch.save(self.netG_A2B.state_dict(), self.config['save_root'] + 'netG_A2B.pth')
             #torch.save(netG_B2A.state_dict(), 'output/netG_B2A_3D.pth')
             #torch.save(netD_A.state_dict(), 'output/netD_A_3D.pth')
@@ -147,32 +128,13 @@ class P2p_Trainer():
                 MAE = 0
                 num = 0
                 for i, batch in enumerate(self.val_data):
-                    real_A = Variable(self.input_A.copy_(batch['T1']))
-                    real_B = Variable(self.input_B.copy_(batch['T2'])).detach().cpu().numpy().squeeze()
+                    real_A = Variable(self.input_A.copy_(batch['A']))
+                    real_B = Variable(self.input_B.copy_(batch['B'])).detach().cpu().numpy().squeeze()
                     fake_B = self.netG_A2B(real_A).detach().cpu().numpy().squeeze()
                     mae = self.MAE(fake_B,real_B)
                     MAE += mae
                     num += 1
-                
-                
-                    
-                #LD = loss_D_B.item()
-                #ADV = loss_G.item()
-                #SM = SM_loss.item()
-                #SR = SR_loss.item()
-                L = [[MAE/num]] #LD,ADV,SR,MAE/num
-                arr = np.array(L)
-                
-                if epoch == 0:
-                    np.save(self.config['save_root']+'save', arr)
-                else:
-                    old_save = np.load(self.config['save_root']+'save.npy')
-                    new_save = np.concatenate([old_save,arr],0)
-                    
-                    np.save(self.config['save_root']+'save', new_save)
-                    
-                    
-                    
+
                 print ('MAE:',MAE/num)
                 
                     
@@ -186,28 +148,20 @@ class P2p_Trainer():
                 num = 0
                 
                 for i, batch in enumerate(self.val_data):
-                    real_A = Variable(self.input_A.copy_(batch['T1']))
-                    real_B = Variable(self.input_B.copy_(batch['T2'])).detach().cpu().numpy().squeeze()
+                    real_A = Variable(self.input_A.copy_(batch['A']))
+                    real_B = Variable(self.input_B.copy_(batch['B'])).detach().cpu().numpy().squeeze()
                     fake_B = self.netG_A2B(real_A).detach().cpu().numpy().squeeze()
                     
                     mae = self.MAE(fake_B,real_B)
-                    
                     psnr = self.PSNR(fake_B,real_B)
                     ssim = measure.compare_ssim(fake_B,real_B)
-                    
                     MAE += mae
                     PSNR += psnr
                     SSIM += ssim 
                     num += 1
-                    image_FB = 255*((fake_B+1)/2)
-                    cv2.imwrite(self.config['image_save']+ str(num)+'.png',image_FB)
-                    
-                    
-                    
-                 
-#                 print ('MAE:',MAE/num)
-#                 print ('PSNR:',PSNR/num)
-#                 print ('SSIM:',SSIM/num)
+                print ('MAE:',MAE/num)
+                print ('PSNR:',PSNR/num)
+                print ('SSIM:',SSIM/num)
     
     def PSNR(self,fake,real):
        x,y = np.where(real!= -1)

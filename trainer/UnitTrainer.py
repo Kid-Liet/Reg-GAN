@@ -84,10 +84,11 @@ class Unit_Trainer(nn.Module):
         self.fake_B_buffer = ReplayBuffer()
 
         # Dataset loader
+        level = config['noise_level']  # set noise level
         transforms_1 = [
             ToPILImage(),
             RandomAffine(
-                degrees=5, translate=[0.05, 0.05], scale=[0.9, 1.1], fillcolor=-1
+                degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1
             ),
             ToTensor(),
             Resize(size_tuple=(config["size"], config["size"])),
@@ -96,7 +97,8 @@ class Unit_Trainer(nn.Module):
         transforms_2 = [
             ToPILImage(),
             RandomAffine(
-                degrees=5, translate=[0.05, 0.05], scale=[0.9, 1.1], fillcolor=-1
+                degrees=level, translate=[0.02 * level, 0.02 * level], scale=[1 - 0.02 * level, 1 + 0.02 * level],
+                fillcolor=-1
             ),
             ToTensor(),
             Resize(size_tuple=(config["size"], config["size"])),
@@ -129,15 +131,15 @@ class Unit_Trainer(nn.Module):
         )
 
         # Loss plot
-        self.logger = Logger(config["name"], config["n_epochs"], len(self.dataloader))
+        self.logger = Logger(config["name"], config['port'],config["n_epochs"], len(self.dataloader))
 
     def train(self):
         ###### Training ######
         for epoch in range(self.config["epoch"], self.config["n_epochs"]):
             for i, batch in enumerate(self.dataloader):
                 # Set model input
-                real_A = Variable(self.input_A.copy_(batch["T1"]))
-                real_B = Variable(self.input_B.copy_(batch["T2"]))
+                real_A = Variable(self.input_A.copy_(batch["A"]))
+                real_B = Variable(self.input_B.copy_(batch["B"]))
                 if self.config["bidirect"]:  # b dir
                     if self.config["regist"]:  # + reg
                         self.optimizer_R_A.zero_grad()
@@ -174,16 +176,16 @@ class Unit_Trainer(nn.Module):
                         self.loss_gen_adv_b = self.netD_B.calc_gen_loss(x_ab)
                         # Total loss
                         loss_G = (
-                            self.loss_gen_adv_a
-                            + self.loss_gen_adv_b
-                            + self.loss_gen_recon_x_a * 10
-                            + self.loss_gen_recon_x_b * 10
-                            + self.loss_gen_recon_kl_a * 0.01
-                            + self.loss_gen_recon_kl_b * 0.01
-                            + self.loss_gen_cyc_x_a * 10
-                            + self.loss_gen_cyc_x_b * 10
-                            + self.loss_gen_recon_kl_cyc_aba * 0.01
-                            + self.loss_gen_recon_kl_cyc_bab * 0.01
+                            self.loss_gen_adv_a * self.config['Adv_lamda']
+                            + self.loss_gen_adv_b * self.config['Adv_lamda']
+                            + self.loss_gen_recon_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_a * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_b * self.config['Recon_kl_lamda']
+                            + self.loss_gen_cyc_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_cyc_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_cyc_aba * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_cyc_bab * self.config['Recon_kl_lamda']
                         )
 
                         ################ Reg ##############
@@ -191,12 +193,12 @@ class Unit_Trainer(nn.Module):
                         fake_B = x_ab
                         Trans = self.R_A(x_ab, real_B)
                         SysRegist_A2B = self.spatial_transform(x_ab, Trans)
-                        SR_loss = 20 * self.L1_loss(SysRegist_A2B, real_B)  ###SR
-                        SM_loss = 10 * smooothing_loss(Trans)
+                        SR_loss = self.config['Corr_lamda'] * self.L1_loss(SysRegist_A2B, real_B)  ###SR
+                        SM_loss = self.config['Smooth_lamda'] * smooothing_loss(Trans)
 
                         # Total loss
-                        loss_G = loss_G + SR_loss + SM_loss
-                        loss_G.backward()
+                        loss_Total = loss_G + SR_loss + SM_loss
+                        loss_Total.backward()
                         self.optimizer_G.step()
                         self.optimizer_R_A.step()
 
@@ -210,13 +212,12 @@ class Unit_Trainer(nn.Module):
                         # D loss
                         loss_D_A = self.netD_A.calc_dis_loss(x_ba.detach(), x_a)
                         loss_D_B = self.netD_B.calc_dis_loss(x_ab.detach(), x_b)
-                        self.loss_dis_total = loss_D_A + loss_D_B
+                        self.loss_dis_total = self.config['Adv_lamda'] * (loss_D_A + loss_D_B)
                         self.loss_dis_total.backward()
                         self.optimizer_D.step()
                         ###################################
 
                     else:
-                        # self.optimizer_R_A.zero_grad()
                         self.optimizer_G.zero_grad()
                         x_a = real_A
                         x_b = real_B
@@ -250,32 +251,21 @@ class Unit_Trainer(nn.Module):
                         self.loss_gen_adv_b = self.netD_B.calc_gen_loss(x_ab)
                         # Total loss
                         loss_G = (
-                            self.loss_gen_adv_a
-                            + self.loss_gen_adv_b
-                            + self.loss_gen_recon_x_a * 10
-                            + self.loss_gen_recon_x_b * 10
-                            + self.loss_gen_recon_kl_a * 0.01
-                            + self.loss_gen_recon_kl_b * 0.01
-                            + self.loss_gen_cyc_x_a * 10
-                            + self.loss_gen_cyc_x_b * 10
-                            + self.loss_gen_recon_kl_cyc_aba * 0.01
-                            + self.loss_gen_recon_kl_cyc_bab * 0.01
+                            self.loss_gen_adv_a * self.config['Adv_lamda']
+                            + self.loss_gen_adv_b * self.config['Adv_lamda']
+                            + self.loss_gen_recon_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_a * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_b * self.config['Recon_kl_lamda']
+                            + self.loss_gen_cyc_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_cyc_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_cyc_aba * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_cyc_bab * self.config['Recon_kl_lamda']
                         )
 
-                        ################ Reg ##############
-
                         fake_B = x_ab
-                        # Trans = self.R_A(x_ab, real_B)
-                        # SysRegist_A2B = self.spatial_transform(x_ab, Trans)
-                        # SR_loss = 20 * self.L1_loss(SysRegist_A2B, real_B)  ###SR
-                        # SM_loss = 10 * smooothing_loss(Trans)
-
-                        # Total loss
-                        # loss_G = loss_G + SR_loss + SM_loss
                         loss_G.backward()
                         self.optimizer_G.step()
-                        # self.optimizer_R_A.step()
-
                         ###### Discriminator ######
                         self.optimizer_D.zero_grad()
                         h_a, n_a = self.netG_A2B.encode(x_a)
@@ -286,7 +276,7 @@ class Unit_Trainer(nn.Module):
                         # D loss
                         loss_D_A = self.netD_A.calc_dis_loss(x_ba.detach(), x_a)
                         loss_D_B = self.netD_B.calc_dis_loss(x_ab.detach(), x_b)
-                        self.loss_dis_total = loss_D_A + loss_D_B
+                        self.loss_dis_total = self.config['Adv_lamda'] * (loss_D_A + loss_D_B)
                         self.loss_dis_total.backward()
                         self.optimizer_D.step()
                         ###################################
@@ -318,25 +308,20 @@ class Unit_Trainer(nn.Module):
                         self.loss_gen_recon_kl_a = self.__compute_kl(h_a)
                         self.loss_gen_recon_kl_b = self.__compute_kl(h_b)
                         self.loss_gen_cyc_x_a = self.recon_criterion(x_aba, x_a)
-                        # self.loss_gen_cyc_x_b = self.recon_criterion(x_bab, x_b)
                         self.loss_gen_recon_kl_cyc_aba = self.__compute_kl(h_a_recon)
-                        # self.loss_gen_recon_kl_cyc_bab = self.__compute_kl(h_b_recon)
 
                         # GAN loss
-                        # self.loss_gen_adv_a = self.netD_A.calc_gen_loss(x_ba)
                         self.loss_gen_adv_b = self.netD_B.calc_gen_loss(x_ab)
                         # Total loss
                         loss_G = (
                             # self.loss_gen_adv_a
-                            self.loss_gen_adv_b
-                            + self.loss_gen_recon_x_a * 10
-                            + self.loss_gen_recon_x_b * 10
-                            + self.loss_gen_recon_kl_a * 0.01
-                            + self.loss_gen_recon_kl_b * 0.01
-                            + self.loss_gen_cyc_x_a * 10
-                            # + self.loss_gen_cyc_x_b * 10
-                            + self.loss_gen_recon_kl_cyc_aba * 0.01
-                            # + self.loss_gen_recon_kl_cyc_bab * 0.01
+                            self.loss_gen_adv_b * self.config['Adv_lamda']
+                            + self.loss_gen_recon_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_a * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_b * self.config['Recon_kl_lamda']
+                            + self.loss_gen_cyc_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_cyc_aba * self.config['Recon_kl_lamda']
                         )
 
                         ################ Reg ##############
@@ -344,32 +329,28 @@ class Unit_Trainer(nn.Module):
                         fake_B = x_ab
                         Trans = self.R_A(x_ab, real_B)
                         SysRegist_A2B = self.spatial_transform(x_ab, Trans)
-                        SR_loss = 20 * self.L1_loss(SysRegist_A2B, real_B)  ###SR
-                        SM_loss = 10 * smooothing_loss(Trans)
+                        SR_loss = self.config['Corr_lamda'] * self.L1_loss(SysRegist_A2B, real_B)  ###SR
+                        SM_loss = self.config['Smooth_lamda'] * smooothing_loss(Trans)
 
                         # Total loss
-                        loss_G = loss_G + SR_loss + SM_loss
-                        loss_G.backward()
+                        loss_Total = loss_G + SR_loss + SM_loss
+                        loss_Total.backward()
                         self.optimizer_G.step()
                         self.optimizer_R_A.step()
 
                         ###### Discriminator ######
                         self.optimizer_D.zero_grad()
                         h_a, n_a = self.netG_A2B.encode(x_a)
-                        h_b, n_b = self.netG_B2A.encode(x_b)
                         # decode (cross domain)
-                        # x_ba = self.netG_A2B.decode(h_b + n_b)
                         x_ab = self.netG_B2A.decode(h_a + n_a)
                         # D loss
-                        # loss_D_A = self.netD_A.calc_dis_loss(x_ba.detach(), x_a)
                         loss_D_B = self.netD_B.calc_dis_loss(x_ab.detach(), x_b)
-                        self.loss_dis_total = loss_D_B
+                        self.loss_dis_total = self.config['Adv_lamda'] * loss_D_B
                         self.loss_dis_total.backward()
                         self.optimizer_D.step()
                         ###################################
 
                     else:
-                        # self.optimizer_R_A.zero_grad()
                         self.optimizer_G.zero_grad()
                         x_a = real_A
                         x_b = real_B
@@ -394,9 +375,7 @@ class Unit_Trainer(nn.Module):
                         self.loss_gen_recon_kl_a = self.__compute_kl(h_a)
                         self.loss_gen_recon_kl_b = self.__compute_kl(h_b)
                         self.loss_gen_cyc_x_a = self.recon_criterion(x_aba, x_a)
-                        # self.loss_gen_cyc_x_b = self.recon_criterion(x_bab, x_b)
                         self.loss_gen_recon_kl_cyc_aba = self.__compute_kl(h_a_recon)
-                        # self.loss_gen_recon_kl_cyc_bab = self.__compute_kl(h_b_recon)
 
                         # GAN loss
                         # self.loss_gen_adv_a = self.netD_A.calc_gen_loss(x_ba)
@@ -404,30 +383,21 @@ class Unit_Trainer(nn.Module):
                         # Total loss
                         loss_G = (
                             # self.loss_gen_adv_a
-                            self.loss_gen_adv_b
-                            + self.loss_gen_recon_x_a * 10
-                            + self.loss_gen_recon_x_b * 10
-                            + self.loss_gen_recon_kl_a * 0.01
-                            + self.loss_gen_recon_kl_b * 0.01
-                            + self.loss_gen_cyc_x_a * 10
-                            # + self.loss_gen_cyc_x_b * 10
-                            + self.loss_gen_recon_kl_cyc_aba * 0.01
-                            # + self.loss_gen_recon_kl_cyc_bab * 0.01
+                            self.loss_gen_adv_b * self.config['Adv_lamda']
+                            + self.loss_gen_recon_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_x_b * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_a * self.config['Recon_kl_lamda']
+                            + self.loss_gen_recon_kl_b * self.config['Recon_kl_lamda']
+                            + self.loss_gen_cyc_x_a * self.config['Cyc_lamda']
+                            + self.loss_gen_recon_kl_cyc_aba * self.config['Recon_kl_lamda']
                         )
 
                         ################ Reg ##############
 
                         fake_B = x_ab
-                        # Trans = self.R_A(x_ab, real_B)
-                        # SysRegist_A2B = self.spatial_transform(x_ab, Trans)
-                        # SR_loss = 20 * self.L1_loss(SysRegist_A2B, real_B)  ###SR
-                        # SM_loss = 10 * smooothing_loss(Trans)
-
-                        # Total loss
-                        # loss_G = loss_G + SR_loss + SM_loss
                         loss_G.backward()
                         self.optimizer_G.step()
-                        # self.optimizer_R_A.step()
+
 
                         ###### Discriminator ######
                         self.optimizer_D.zero_grad()
@@ -439,7 +409,7 @@ class Unit_Trainer(nn.Module):
                         # D loss
                         # loss_D_A = self.netD_A.calc_dis_loss(x_ba.detach(), x_a)
                         loss_D_B = self.netD_B.calc_dis_loss(x_ab.detach(), x_b)
-                        self.loss_dis_total = loss_D_B
+                        self.loss_dis_total = self.config['Adv_lamda'] * loss_D_B
                         self.loss_dis_total.backward()
                         self.optimizer_D.step()
                         ###################################
@@ -447,7 +417,6 @@ class Unit_Trainer(nn.Module):
 
                 self.logger.log(
                     {
-                        "loss_D_B": loss_D_B,
                         "loss_G": loss_G,
                     },
                     images={
@@ -476,9 +445,9 @@ class Unit_Trainer(nn.Module):
                 MAE = 0
                 num = 0
                 for i, batch in enumerate(self.val_data):
-                    real_A = Variable(self.input_A.copy_(batch["T1"]))
+                    real_A = Variable(self.input_A.copy_(batch["A"]))
                     real_B = (
-                        Variable(self.input_B.copy_(batch["T2"]))
+                        Variable(self.input_B.copy_(batch["B"]))
                         .detach()
                         .cpu()
                         .numpy()
@@ -521,9 +490,9 @@ class Unit_Trainer(nn.Module):
             num = 0
 
             for i, batch in enumerate(self.val_data):
-                real_A = Variable(self.input_A.copy_(batch["T1"]))
+                real_A = Variable(self.input_A.copy_(batch["A"]))
                 real_B = (
-                    Variable(self.input_B.copy_(batch["T2"]))
+                    Variable(self.input_B.copy_(batch["B"]))
                     .detach()
                     .cpu()
                     .numpy()

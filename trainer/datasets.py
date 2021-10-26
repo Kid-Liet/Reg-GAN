@@ -19,13 +19,13 @@ class ImageDataset(Dataset):
         random.seed(seed) # apply this seed to img tranfsorms
         
         item_A = self.transform1(np.load(self.files_A[index % len(self.files_A)]).astype(np.float32))
-        random.seed(seed)
+        #random.seed(seed)
         if self.unaligned:
             item_B = self.transform2(np.load(self.files_B[random.randint(0, len(self.files_B) - 1)]))
         
         else:  
             item_B = self.transform2(np.load(self.files_B[index % len(self.files_B)]).astype(np.float32))
-        return {'T1': item_A, 'T2': item_B}
+        return {'A': item_A, 'B': item_B}
     def __len__(self):
         return max(len(self.files_A), len(self.files_B))
 
@@ -43,6 +43,6 @@ class ValDataset(Dataset):
             item_B = self.transform(np.load(self.files_B[random.randint(0, len(self.files_B) - 1)]))
         else:
             item_B = self.transform(np.load(self.files_B[index % len(self.files_B)]).astype(np.float32))
-        return {'T1': item_A, 'T2': item_B}
+        return {'A': item_A, 'B': item_B}
     def __len__(self):
         return max(len(self.files_A), len(self.files_B))

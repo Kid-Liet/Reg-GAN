@@ -239,6 +239,7 @@ class ResnetTransformer(torch.nn.Module):
     def forward(self, x):
         return self.model(x)
 
+
 class ResnetBlock(nn.Module):
     """Define a Resnet block"""
 
