@@ -99,9 +99,9 @@ class ResUnet(torch.nn.Module):
         return x
 
 class Reg(nn.Module):
-    def __init__(self):
+    def __init__(self,height,width):
         super(Reg, self).__init__()
-        height,width=256,256
+       #height,width=256,256
         in_channels_a,in_channels_b=1,1
         init_func = 'kaiming'
         init_to_identity = True
