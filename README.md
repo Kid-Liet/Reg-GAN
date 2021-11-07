@@ -1,7 +1,7 @@
 # Breaking the Dilemma of Medical Image-to-image Translation
 ![bat](./p2pcycreg.png)
 
-This paper has been accepted by [NeurIPS 2021](https://openreview.net/forum?id=C0GmZH2RnVR&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DNeurIPS.cc%2F2021%2FConference%2FAuthors%23your-submissions)).
+This paper has been accepted by [NeurIPS 2021 (Spotlight)](https://openreview.net/forum?id=C0GmZH2RnVR&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DNeurIPS.cc%2F2021%2FConference%2FAuthors%23your-submissions)).
 Get the full paper on [Arxiv](https://arxiv.org/pdf/2110.06465.pdf).
 
 ## Main Reference Environment
