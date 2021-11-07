@@ -25,7 +25,7 @@ class Nice_Trainer():
         ## def networks
         
         if config['regist']:
-            self.R_A = Reg(config['size'], config['size']).cuda()
+            self.R_A = Reg(config['size'], config['size'],config['input_nc'],config['input_nc']).cuda()
             self.spatial_transform = Transformer_2D().cuda()
             self.optimizer_R_A = torch.optim.Adam(self.R_A.parameters(), lr=config['lr'], betas=(0.5, 0.999))
         if config['bidirect']:
