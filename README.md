@@ -49,3 +49,18 @@ https://drive.google.com/file/d/1xWXB9u6dQ9ZytmgQl_0ph4H_Ivtd41zJ/view?usp=shari
 We provide some processed data for your convenience：
 https://drive.google.com/file/d/1PiTzGQEVV7NO4nPaHeQv61WgDxoD76nL/view?usp=sharing
 
+
+## Citation
+
+If you find RegGAN useful in your research, please consider citing:
+
+```
+@inproceedings{
+kong2021breaking,
+title={Breaking the Dilemma of Medical Image-to-image Translation},
+author={Lingke Kong and Chenyu Lian and Detian Huang and ZhenJiang Li and Yanle Hu and Qichao Zhou},
+booktitle={Thirty-Fifth Conference on Neural Information Processing Systems},
+year={2021},
+url={https://openreview.net/forum?id=C0GmZH2RnVR}
+}
+```
