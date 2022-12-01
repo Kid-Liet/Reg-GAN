@@ -13,7 +13,6 @@ from Model.CycleGan import *
 from .utils import Resize,ToTensor,smooothing_loss
 from .utils import Logger
 from .reg import Reg
-from torchvision.transforms import RandomAffine
 from torchvision.transforms import RandomAffine,ToPILImage
 from .transformer import Transformer_2D
 from skimage import measure
@@ -59,17 +58,18 @@ class Cyc_Trainer():
 
         #Dataset loader
         level = config['noise_level']  # set noise level
+        
         transforms_1 = [ToPILImage(),
-                        RandomAffine(degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1),
-                        ToTensor(),
-                        Resize(size_tuple = (config['size'], config['size']))]
+                   RandomAffine(degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1),
+                   ToTensor(),
+                   Resize(size_tuple = (config['size'], config['size']))]
     
         transforms_2 = [ToPILImage(),
-                        RandomAffine(degrees=level,translate=[0.02*level, 0.02*level],scale=[1-0.02*level, 1+0.02*level],fillcolor=-1),#
-                        ToTensor(),
-                        Resize(size_tuple = (config['size'], config['size']))]
+                   RandomAffine(degrees=1,translate=[0.02, 0.02],scale=[0.98, 1.02],fillcolor=-1),
+                   ToTensor(),
+                   Resize(size_tuple = (config['size'], config['size']))]
 
-        self.dataloader = DataLoader(ImageDataset(config['dataroot'], transforms_1=transforms_1, transforms_2=transforms_2, unaligned=False),
+        self.dataloader = DataLoader(ImageDataset(config['dataroot'], level, transforms_1=transforms_1, transforms_2=transforms_2, unaligned=False,),
                                 batch_size=config['batchSize'], shuffle=True, num_workers=config['n_cpu'])
 
         val_transforms = [ToTensor(),
@@ -271,7 +271,7 @@ class Cyc_Trainer():
                         ###################################
 
 
-                self.logger.log({'loss_D_B': loss_D_B,},
+                self.logger.log({'loss_D_B': loss_D_B,'SR_loss':SR_loss},
                        images={'real_A': real_A, 'real_B': real_B, 'fake_B': fake_B})#,'SR':SysRegist_A2B
 
     #         # Save models checkpoints
