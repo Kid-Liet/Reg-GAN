@@ -350,10 +350,10 @@ class Cyc_Trainer():
         dir_x = ((dir_x-x_min)/(x_max-x_min))*255
         dir_y = ((dir_y-y_min)/(y_max-y_min))*255
         tans_x = cv2.normalize(dir_x, heatmapshow, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        tans_x[tans_x<=150] = 0
+        #tans_x[tans_x<=150] = 0
         tans_x = cv2.applyColorMap(tans_x, cv2.COLORMAP_JET)
         tans_y = cv2.normalize(dir_y, heatmapshow, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        tans_y[tans_y<=150] = 0
+        #tans_y[tans_y<=150] = 0
         tans_y = cv2.applyColorMap(tans_y, cv2.COLORMAP_JET)
         gradxy = cv2.addWeighted(tans_x, 0.5,tans_y, 0.5, 0)
 
