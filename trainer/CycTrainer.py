@@ -326,7 +326,7 @@ class Cyc_Trainer():
     
     def PSNR(self,fake,real):
        x,y = np.where(real!= -1)# Exclude background
-       mse = np.mean(((fake[x][y]+1)/2. - (real[x][y]+1)/2.) ** 2 )
+       mse = np.mean(((fake[x,y]+1)/2. - (real[x,y]+1)/2.) ** 2 )
        if mse < 1.0e-10:
           return 100
        else:
